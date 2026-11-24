@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#073B4C">
+  <title>TABÚ APP</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root{--navy:#073B4C;--teal:#087E8B;--mint:#5CE1D1;--ice:#F2FAFC;--ink:#18343D;--muted:#526A70;--line:#D4E7E9;--white:#fff}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--ice);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);padding-bottom:86px}
+    header{position:sticky;top:0;z-index:500;background:rgba(242,250,252,.96);backdrop-filter:blur(12px);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .brand-wrap{display:flex;align-items:center;gap:10px}
+    .logo{width:38px;height:38px;border-radius:13px;background:var(--navy);color:var(--mint);display:grid;place-items:center;font-size:21px}
+    .brand{font-weight:900;letter-spacing:1px;color:var(--navy);font-size:19px}.tag{font-size:11px;color:var(--teal);font-weight:600}
+    .priv-btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer}
+    main{max-width:760px;margin:0 auto;padding:16px}
+    .hero{background:linear-gradient(135deg,var(--navy),var(--teal));color:white;padding:24px;border-radius:26px;box-shadow:0 10px 28px #073b4c20}
+    .eyebrow{color:var(--mint);font-weight:800;font-size:11px;letter-spacing:1.4px}.hero h1{font-size:30px;line-height:1.12;margin:12px 0}.hero p{color:#e2f3f5;line-height:1.5}
+    .btn{border:0;border-radius:14px;padding:12px 16px;font-weight:750;background:var(--teal);color:white;cursor:pointer;transition:transform .12s ease,opacity .15s ease}.btn:active{transform:scale(.98)}.btn.mint{background:var(--mint);color:var(--navy)}.btn.light{background:#e3f5f4;color:var(--navy);padding:9px 12px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
+    .section-head{margin:22px 0 12px}.section-head h2{margin:0;color:var(--navy);font-size:20px}.section-head p{margin:4px 0;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tile,.card{background:white;border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 4px 14px #073b4c08}
+    .tile{min-height:124px;text-align:left;cursor:pointer;color:var(--ink);transition:transform .15s ease,border-color .15s ease}.tile:hover{transform:translateY(-2px);border-color:var(--teal)}.tile .ico{font-size:25px;color:var(--teal)}.tile b{display:block;margin-top:10px;color:var(--navy)}.tile small{color:var(--muted)}
+    .notice{background:#e3f5f4;border-radius:14px;padding:13px;font-size:12px;line-height:1.5;color:var(--navy);margin-top:14px}
+    .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px max(8px,env(safe-area-inset-bottom))}
+    .tab{border:0;background:transparent;color:#5b747a;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:54px;cursor:pointer}.tab span{font-size:21px}.tab.active{color:var(--teal);font-weight:800}
+    .screen{display:none;animation:fadeIn .2s ease}.screen.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    input,textarea,select{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;font:inherit;background:#fff;color:var(--ink);margin:6px 0 12px}textarea{min-height:96px;resize:vertical}label{font-size:13px;font-weight:700;color:var(--navy)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}
+    .chip{border:1px solid #bce0e2;background:#fff;color:var(--navy);border-radius:99px;padding:7px 12px;font-size:12px;font-weight:650;cursor:pointer}.chip.active,.chip:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+    .chatbox{height:44vh;min-height:250px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px;background:#eaf4f5;border-radius:18px}
+    .bubble{padding:12px 14px;border-radius:17px;max-width:88%;line-height:1.45;font-size:14px;white-space:pre-wrap}.bubble.bot{background:#fff;align-self:flex-start}.bubble.user{background:var(--teal);color:white;align-self:flex-end}
+    .chatrow{display:flex;gap:8px;margin-top:10px}.chatrow input{margin:0;min-width:0}
+    #map{height:46vh;min-height:300px;border-radius:18px;overflow:hidden;border:1px solid var(--line);z-index:1;margin-top:10px}
+    .method{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}.method .mi{font-size:23px;color:var(--teal)}
+    .stars button{font-size:26px;background:none;border:0;color:#d69b16;padding:3px;cursor:pointer}
+    .muted{font-size:12px;color:var(--muted);line-height:1.5}.review{margin-top:10px}.review b{color:var(--navy)}
+    .pill{display:inline-block;background:#e3f5f4;color:var(--navy);border-radius:99px;padding:5px 9px;font-size:11px;font-weight:700;margin-top:6px}
+    .status-box{padding:11px 13px;border-radius:12px;font-size:13px;margin:8px 0;background:#e3f5f4;color:var(--navy);font-weight:600}
+    .status-box.err{background:#fdecea;color:#8a1c1c}
+    @media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.hero h1{font-size:38px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand-wrap">
+    <div class="logo">♥</div>
+    <div><div class="brand">TABÚ APP</div><div class="tag">Tu salud, tus decisiones, sin prejuicios.</div></div>
+  </div>
+  <button class="priv-btn" onclick="show('privacy')">🔒 Privacidad</button>
+</header>
+
+<main>
+  <section id="home" class="screen active">
+    <div class="hero">
+      <div class="eyebrow">TU ESPACIO SEGURO</div>
+      <h1>Hablar no debería dar miedo.</h1>
+      <p>Información clara, orientación y servicios sin prejuicios.</p>
+      <button class="btn mint" onclick="show('assistant')">💬 Haz tu pregunta</button>
+    </div>
+    <div class="section-head"><h2>¿Qué necesitas hoy?</h2><p>Explora las herramientas interactivas de TABÚ.</p></div>
+    <div class="grid">
+      <button class="tile" onclick="show('assistant')"><div class="ico">💬</div><b>Pregúntale a TABÚ</b><small>Chat educativo anónimo</small></button>
+      <button class="tile" onclick="show('map')"><div class="ico">📍</div><b>Farmacias</b><small>Mapa en tiempo real</small></button>
+      <button class="tile" onclick="show('methods')"><div class="ico">💊</div><b>Anticonceptivos</b><small>Compara tus opciones</small></button>
+      <button class="tile" onclick="show('reviews')"><div class="ico">⭐</div><b>Experiencias</b><small>Reseñas de atención</small></button>
+    </div>
+    <div class="notice">🔒 <b>Tu privacidad importa.</b> Puedes explorar sin crear una cuenta. La ubicación solo se solicita si decides usar el mapa.</div>
+    <p class="muted">En Perú puedes consultar orientación gratuita en salud a través de los canales oficiales del MINSA, incluida la Línea 113.</p>
+  </section>
+
+  <section id="assistant" class="screen">
+    <div class="section-head"><h2>Asistente TABÚ</h2><p>Pregunta con confianza o prueba una consulta rápida.</p></div>
+    <div class="chips">
+      <button class="chip" onclick="quickAsk('¿Cómo funciona el preservativo?')">🛡️ Uso del condón</button>
+      <button class="chip" onclick="quickAsk('¿Qué es la anticoncepción de emergencia?')">⏱️ Anticoncepción de emergencia</button>
+      <button class="chip" onclick="quickAsk('¿Qué métodos anticonceptivos existen?')">💊 Opciones de métodos</button>
+      <button class="chip" onclick="quickAsk('¿Dónde pedir orientación gratuita en Perú?')">🇵🇪 Orientación MINSA</button>
+    </div>
+    <div id="chat" class="chatbox">
+      <div class="bubble bot">¡Hola! Soy TABÚ. Puedes preguntarme sobre anticoncepción, salud sexual o dónde buscar orientación sin dar tu nombre. ¿En qué puedo ayudarte?</div>
+    </div>
+    <div class="chatrow">
+      <input id="question" placeholder="Escribe tu pregunta…" maxlength="1500" onkeydown="if(event.key==='Enter')sendQuestion()">
+      <button class="btn" id="sendBtn" onclick="sendQuestion()">Enviar</button>
+    </div>
+    <div class="notice" id="aiNotice">El asistente ofrece información educativa. No diagnostica ni reemplaza a profesionales de salud.</div>
+  </section>
+
+  <section id="mapScreen" class="screen">
+    <div class="section-head"><h2>Farmacias cercanas</h2><p>Usa tu GPS o selecciona una zona de Lima para consultar establecimientos.</p></div>
+    <div class="chips">
+      <button class="btn" onclick="locate()">📍 Mi ubicación</button>
+      <button class="btn light" onclick="searchZone(-12.0464,-77.0428,'Centro de Lima')">Centro de Lima</button>
+      <button class="btn light" onclick="searchZone(-12.1191,-77.0349,'Miraflores')">Miraflores</button>
+      <button class="btn light" onclick="searchZone(-12.0931,-77.0011,'San Borja')">San Borja</button>
+      <button class="btn light" onclick="searchZone(-12.0845,-77.0357,'Lince')">Lince</button>
+    </div>
+    <p class="muted" id="mapStatus">Selecciona una zona o permite tu ubicación para cargar farmacias desde OpenStreetMap.</p>
+    <div id="map"></div>
+    <div id="pharmacyList"></div>
+    <div class="notice">Los datos provienen de OpenStreetMap y tienen fines orientativos. Verifica horarios y disponibilidad directamente.</div>
+  </section>
+
+  <section id="methods" class="screen">
+    <div class="section-head"><h2>Conoce tus opciones</h2><p>Filtra por característica para comparar información general.</p></div>
+    <div class="chips" id="methodFilters">
+      <button class="chip active" onclick="filterMethods('all', this)">Todos (6)</button>
+      <button class="chip" onclick="filterMethods('its', this)">Protege frente a ITS</button>
+      <button class="chip" onclick="filterMethods('long', this)">Larga duración</button>
+      <button class="chip" onclick="filterMethods('short', this)">Uso puntual / regular</button>
+    </div>
+    <div id="methodList"></div>
+    <div class="notice">Solo los métodos de barrera (preservativos) reducen el riesgo de ITS. Consulta con un profesional de salud para elegir el ideal para ti.</div>
+  </section>
+
+  <section id="reviews" class="screen">
+    <div class="section-head"><h2>Experiencias anónimas</h2><p>Comparte cómo fue la atención, sin publicar tu nombre.</p></div>
+    <div class="card">
+      <label for="place">Nombre del establecimiento</label>
+      <input id="place" maxlength="100" placeholder="Ej. Farmacia Av. Larco o Centro de Salud">
+      <label>Tu calificación</label>
+      <div class="stars" id="stars"></div>
+      <label for="comment">¿Cómo fue la atención?</label>
+      <textarea id="comment" maxlength="600" placeholder="Cuenta si te atendieron con respeto y claridad. No incluyas datos personales."></textarea>
+      <div id="reviewMsg"></div>
+      <button class="btn" id="reviewBtn" onclick="submitReview()">Enviar reseña anónima</button>
+      <p class="muted">Las reseñas pasan por moderación antes de hacerse públicas y nunca muestran identidad.</p>
+    </div>
+    <div class="section-head"><h2>Reseñas de la comunidad</h2></div>
+    <div id="reviewsList"><p class="muted">Cargando reseñas…</p></div>
+  </section>
+
+  <section id="privacy" class="screen">
+    <div class="section-head"><h2>Tu privacidad</h2><p>Tú decides qué compartir y cuándo.</p></div>
+    <div class="card">
+      <h3>🔐 Sin registro obligatorio</h3><p class="muted">Las funciones principales no solicitan correo ni nombre.</p><hr>
+      <h3>📍 Ubicación bajo tu control</h3><p class="muted">También puedes explorar zonas predefinidas sin activar el GPS.</p><hr>
+      <h3>🕶️ Moderación preventiva</h3><p class="muted">Las reseñas bloquean teléfonos, correos o enlaces y se revisan antes de publicarse.</p>
+    </div>
+    <p><a href="https://www.gob.pe/minsa" target="_blank" rel="noopener">Consultar información oficial del MINSA ↗</a></p>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab active" data-screen="home" onclick="show('home')"><span>⌂</span>Inicio</button>
+  <button class="tab" data-screen="assistant" onclick="show('assistant')"><span>💬</span>Pregunta</button>
+  <button class="tab" data-screen="map" onclick="show('map')"><span>📍</span>Mapa</button>
+  <button class="tab" data-screen="methods" onclick="show('methods')"><span>💊</span>Métodos</button>
+  <button class="tab" data-screen="reviews" onclick="show('reviews')"><span>⭐</span>Reseñas</button>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  let map, userMarker, rating = 5, mapReady = false;
+  const pharmacyMarkers = [];
+
+  function show(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = name === 'map' ? 'mapScreen' : name;
+    document.getElementById(target).classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.screen === name));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (name === 'map') {
+      setTimeout(() => {
+        initMap();
+        if (!pharmacyMarkers.length) searchZone(-12.0464, -77.0428, 'Centro de Lima');
+      }, 120);
+    }
+    if (name === 'reviews') loadReviews();
+  }
+
+  function initMap() {
+    if (mapReady) { map.invalidateSize(); return; }
+    map = L.map('map').setView([-12.0464, -77.0428], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    mapReady = true;
+  }
+
+  function searchZone(lat, lon, label) {
+    initMap();
+    map.setView([lat, lon], 15);
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.circleMarker([lat, lon], {
+      radius: 9, color: '#073B4C', fillColor: '#5CE1D1', fillOpacity: 1
+    }).addTo(map).bindPopup('Zona: ' + escapeHtml(label));
+    setMapStatus('Buscando farmacias cerca de ' + label + '…');
+    google.script.run
+      .withSuccessHandler(items => renderPharmacies(items, label))
+      .withFailureHandler(() => setMapStatus('No se pudo conectar con OpenStreetMap. Intenta nuevamente.'))
+      .getNearbyPharmacies(lat, lon);
+  }
+
+  function locate() {
+    if (!navigator.geolocation) {
+      setMapStatus('Tu navegador no soporta GPS. Usa los botones de zona arriba.');
+      return;
+    }
+    setMapStatus('Solicitando permiso de ubicación…');
+    navigator.geolocation.getCurrentPosition(
+      pos => searchZone(pos.coords.latitude, pos.coords.longitude, 'tu ubicación'),
+      () => setMapStatus('No se obtuvo permiso de ubicación. Puedes usar los botones de zonas de Lima.'),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
+  function setMapStatus(t) { document.getElementById('mapStatus').textContent = t; }
+
+  function renderPharmacies(items, label) {
+    pharmacyMarkers.forEach(m => map.removeLayer(m));
+    pharmacyMarkers.length = 0;
+    const list = document.getElementById('pharmacyList');
+    list.innerHTML = '';
+    if (!items || !items.length) {
+      setMapStatus('No encontramos registros en OpenStreetMap cerca de ' + label + '.');
+      return;
+    }
+    items.slice(0, 12).forEach(p => {
+      const marker = L.marker([p.lat, p.lon]).addTo(map)
+        .bindPopup('<b>' + escapeHtml(p.name) + '</b><br>' + escapeHtml(p.address || 'OpenStreetMap'));
+      pharmacyMarkers.push(marker);
+      const div = document.createElement('div');
+      div.className = 'card review';
+      div.innerHTML = '<b>' + escapeHtml(p.name) + '</b><p class="muted">' +
+        escapeHtml(p.address || 'Dirección no especificada en mapa comunitario') +
+        '</p><span class="pill">OpenStreetMap · ' + escapeHtml(label) + '</span>';
+      list.appendChild(div);
+    });
+    setMapStatus('Mostrando ' + Math.min(items.length, 12) + ' farmacias registradas cerca de ' + label + '.');
+  }
+
+  function quickAsk(text) {
+    document.getElementById('question').value = text;
+    sendQuestion();
+  }
+
+  function sendQuestion() {
+    const input = document.getElementById('question');
+    const btn = document.getElementById('sendBtn');
+    const q = input.value.trim();
+    if (!q) return;
+    addBubble(q, 'user');
+    input.value = '';
+    btn.disabled = true;
+    addBubble('Escribiendo respuesta…', 'bot', 'loading');
+    google.script.run
+      .withSuccessHandler(res => {
+        removeLoading();
+        btn.disabled = false;
+        addBubble((res && res.answer) || 'No pudimos generar una respuesta.', 'bot');
+      })
+      .withFailureHandler(() => {
+        removeLoading();
+        btn.disabled = false;
+        addBubble('No se pudo conectar con el servidor. Intenta nuevamente.', 'bot');
+      })
+      .askTabu(q);
+  }
+
+  function addBubble(text, who, id) {
+    const el = document.createElement('div');
+    el.className = 'bubble ' + who;
+    if (id) el.id = id;
+    el.textContent = text;
+    const chat = document.getElementById('chat');
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function removeLoading() { const el = document.getElementById('loading'); if (el) el.remove(); }
+
+  const methods = [
+    ['🛡️', 'Preservativo externo', 'Ayuda a prevenir embarazos y reduce el riesgo de ITS. Usa uno nuevo en cada relación.', 'its'],
+    ['💊', 'Píldoras anticonceptivas', 'Método hormonal de uso diario. No protege frente a infecciones de transmisión sexual.', 'short'],
+    ['💉', 'Inyectables', 'Métodos hormonales aplicados cada 1 o 3 meses según indicación médica.', 'short'],
+    ['〰️', 'Implante subdérmico', 'Método hormonal de larga duración (3 a 5 años) colocado por personal capacitado.', 'long'],
+    ['⚕️', 'DIU (cobre u hormonal)', 'Dispositivo intrauterino de larga duración colocado por personal de salud.', 'long'],
+    ['⏱️', 'Anticoncepción oral de emergencia', 'Uso puntual tras una relación sin protección o falla del método. Más eficaz cuanto antes se tome.', 'short']
+  ];
+
+  function filterMethods(cat, btn) {
+    document.querySelectorAll('#methodFilters .chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const filtered = cat === 'all' ? methods : methods.filter(m => m[3] === cat);
+    document.getElementById('methodList').innerHTML = filtered.map(m =>
+      '<div class="card method"><div class="mi">' + m[0] + '</div><div><b>' + m[1] + '</b><p class="muted">' + m[2] + '</p></div></div>'
+    ).join('');
+  }
+  filterMethods('all');
+
+  function drawStars() {
+    document.getElementById('stars').innerHTML = [1, 2, 3, 4, 5].map(n =>
+      '<button type="button" aria-label="' + n + ' estrellas" onclick="rating=' + n + ';drawStars()">' + (n <= rating ? '★' : '☆') + '</button>'
+    ).join('');
+  }
+  drawStars();
+
+  function submitReview() {
+    const place = document.getElementById('place').value.trim();
+    const comment = document.getElementById('comment').value.trim();
+    const msg = document.getElementById('reviewMsg');
+    const btn = document.getElementById('reviewBtn');
+    if (!place || !comment) {
+      msg.innerHTML = '<div class="status-box err">Completa el establecimiento y el comentario.</div>';
+      return;
+    }
+    btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(r => {
+        btn.disabled = false;
+        msg.innerHTML = '<div class="status-box">' + escapeHtml(r.message) + '</div>';
+        document.getElementById('place').value = '';
+        document.getElementById('comment').value = '';
+        loadReviews();
+      })
+      .withFailureHandler(e => {
+        btn.disabled = false;
+        msg.innerHTML = '<div class="status-box err">' + escapeHtml(e.message || 'No se pudo enviar.') + '</div>';
+      })
+      .submitReview(place, rating, comment);
+  }
+
+  function loadReviews() {
+    google.script.run
+      .withSuccessHandler(items => {
+        const box = document.getElementById('reviewsList');
+        if (!items || !items.length) {
+          box.innerHTML = '<p class="muted">Todavía no hay reseñas aprobadas.</p>';
+          return;
+        }
+        box.innerHTML = items.map(r =>
+          '<div class="card review"><b>' + escapeHtml(r.place) + '</b><p style="color:#d69b16;margin:4px 0">' +
+          ('★'.repeat(r.rating)) + '</p><p>' + escapeHtml(r.comment) + '</p></div>'
+        ).join('');
+      })
+      .withFailureHandler(() => {
+        document.getElementById('reviewsList').textContent = 'No se pudieron cargar las reseñas.';
+      })
+      .getReviews();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+</script>
+</body>
+</html>
